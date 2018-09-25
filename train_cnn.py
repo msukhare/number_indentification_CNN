@@ -6,7 +6,7 @@
 #    By: msukhare <marvin@42.fr>                    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2018/09/17 16:28:47 by msukhare          #+#    #+#              #
-#    Updated: 2018/09/25 17:01:02 by msukhare         ###   ########.fr        #
+#    Updated: 2018/09/25 17:21:58 by msukhare         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -90,6 +90,12 @@ def main():
     model = tf.global_variables_initializer()
     with tf.session as ss:
         ss.run(model)
+        tmp = X_train[start:end]
+        tmp1 = Y_train[start:end]
+        for i in range(start, end):
+            ss.run(training_op, feed_dict={x: tmp, y: tmp1})
+
+
 
 
 if __name__ == "__main__":
