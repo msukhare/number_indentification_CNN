@@ -6,7 +6,7 @@
 #    By: msukhare <marvin@42.fr>                    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2018/09/17 16:28:47 by msukhare          #+#    #+#              #
-#    Updated: 2018/09/25 17:21:58 by msukhare         ###   ########.fr        #
+#    Updated: 2018/09/30 19:19:17 by kemar            ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -15,6 +15,7 @@ import struct as st
 import sys
 from matplotlib import pyplot as plt
 import tensorflow as tf
+from random import *
 
 def read_file_idx(images, labels):
     try:
@@ -36,20 +37,72 @@ def read_file_idx(images, labels):
     return (X, Y, nb_image, rows, cols)
 
 def create_conv_layer(input, filter, p, s, bias, name):
-    weights = tf.Variable(tf.truncated_normal(filter, stddev=0.03, seed=5),\
+    weights = tf.Variable(tf.truncated_normal(filter, stddev=0.05, seed=5),\
             name=name+"W")
-    bias = tf.Variable(tf.truncated_normal(bias, stddev=0.03, seed=5),\
+    bias = tf.Variable(tf.truncated_normal(bias, stddev=0.05, seed=5),\
             name=name+"B")
-    conv_layer = tf.nn.conv2d(input, weights, s, padding=p, data_format="NCHW")
+    conv_layer = tf.nn.conv2d(input, weights, s, padding=p)
     conv_layer += bias
-    conv_layer = tf.nn.relu(conv_layer)
+    #conv_layer = tf.nn.relu(conv_layer)
     return (conv_layer)
 
+def define_dense_layers(in_put, nb_before, nb_neurones):
+    weights = tf.Variable(tf.truncated_normal([nb_before, nb_neurones],\
+            stddev=0.05, seed=5), name="weights1")
+    bias = tf.Variable(tf.truncated_normal([1, nb_neurones], stddev=0.05, seed=5),\
+            name="bias1")
+    return (tf.nn.relu(tf.matmul(in_put, weights) + bias))
+
 def get_new_y(y, batch, nb_class):
-    ret = np.zeros((nb_class, batch), dtype=int)
+    ret = np.zeros((batch, nb_class), dtype=int)
     for i in range(int(batch)):
-        ret[y[i][0]][i] = 1
+        ret[i][y[i]] = 1
     return (ret)
+
+def define_conv_op(x, y):
+    layer1 = create_conv_layer(x, [5, 5, 1, 6], "VALID", [1, 1, 1, 1],\
+            [1, 1, 6], "first_conv_layer")
+    layer1 = tf.nn.pool(layer1, [2, 2], pooling_type="MAX",\
+            padding="VALID", strides=[2, 2])
+    layer2 = create_conv_layer(layer1, [5, 5, 6, 16], "VALID", [1, 1, 1, 1],\
+            [1, 1, 16], "sec_conv_layer")
+    layer2 = tf.nn.pool(layer2, [2, 2], pooling_type="MAX",\
+            padding="VALID", strides=[2, 2])
+    return (layer2)
+
+def init_net5(x, y):
+    out_conv = define_conv_op(x, y)
+    flatten_layer = tf.reshape(out_conv, [-1, (out_conv.shape[1] *\
+            out_conv.shape[2] * out_conv.shape[3])])
+    out_dense = define_dense_layers(flatten_layer, 256, 120)
+    out_dense = define_dense_layers(out_dense, 120, 84)
+    out_dense = define_dense_layers(out_dense, 84, 10)
+    return (tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(\
+            logits=out_dense, labels=y)))
+
+def train_modele(cross_entropy, X_train, Y_train, x, y):
+    init = tf.global_variables_initializer()
+    #learning_rate = tf.Variable(0.005, tf.float32)
+    training = tf.train.GradientDescentOptimizer(0.005).minimize(cross_entropy)
+    nb_epoch = []
+    cost = []
+    with tf.Session() as sess:
+        sess.run(init)
+        for i in range(500):
+            start = randint(0, 59968)
+            avg = 0
+            for j in range(32):
+                X = np.reshape(X_train[(start + j)], (1, 28, 28, 1))
+                Y = get_new_y(Y_train[(start + j)], 1, 10)
+                _, c = sess.run([training, cross_entropy],\
+                        feed_dict={x: X, y: Y})
+                avg += c
+            nb_epoch.append(i)
+            cost.append((avg / 32))
+            #print("epoch = ", i, "cost = ", (avg / 32))
+        sess.close()
+    plt.plot(nb_epoch, cost)
+    plt.show()
 
 def main():
     if (len(sys.argv) < 4):
@@ -61,42 +114,13 @@ def main():
     #plt.show()
     X_train = X_train / 255
     X_test = X_test / 255
-    tmp = X_train[0:1]
-    tmp1 = Y_train[0:1]
-    tmp1 = get_new_y(tmp1, 1, 10)
-    conv_layer1 = create_conv_layer(tmp, [5, 5, 1, 30], "VALID", [1, 1, 1, 1], [30, 1, 1],\
-            "conv_layer1")
-    conv_layer1 = tf.nn.pool(conv_layer1, [2, 2], pooling_type="MAX",\
-            padding="VALID", data_format="NCHW")
-    conv_layer2 = create_conv_layer(conv_layer1, [3, 3, 30, 15], "VALID", [1, 1, 1, 1], [15, 1, 1],\
-            "conv_layer1")
-    conv_layer2 = tf.nn.pool(conv_layer2, [2, 2], pooling_type="MAX", padding="VALID",\
-            data_format="NCHW")
-    flatten_l = tf.reshape(conv_layer2, [6000, 1])
-    hidden1_w = tf.Variable(tf.truncated_normal([1000, 6000], stddev=0.03))
-    hidden1_bias = tf.Variable(tf.truncated_normal([1000, 1], stddev=0.01))
-    dense_layer1 = tf.matmul(hidden1_w, flatten_l) + hidden1_bias
-    dense_layer1 = tf.nn.relu(dense_layer1)
-    hidden2_w = tf.Variable(tf.truncated_normal([500, 1000], stddev=0.03))
-    hidden2_bias = tf.Variable(tf.truncated_normal([500, 1], stddev=0.01))
-    dense_layer2 = tf.matmul(hidden2_w, dense_layer1) + hidden2_bias
-    dense_layer2 = tf.nn.relu(dense_layer2)
-    hidden3_w = tf.Variable(tf.truncated_normal([10, 500], stddev=0.03))
-    hidden3_bias = tf.Variable(tf.truncated_normal([10, 1], stddev=0.01))
-    dense_layer3 = tf.matmul(hidden3_w, dense_layer2) + hidden3_bias
-    out_put_l = tf.nn.softmax(dense_layer3)
-    cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=dense_layer3, labels=tmp1))
-    training_op = tf.train.GradientDescentOptimizer(0.02).minimize(cross_entropy)
-    model = tf.global_variables_initializer()
-    with tf.session as ss:
-        ss.run(model)
-        tmp = X_train[start:end]
-        tmp1 = Y_train[start:end]
-        for i in range(start, end):
-            ss.run(training_op, feed_dict={x: tmp, y: tmp1})
-
-
-
+    x = tf.placeholder(tf.float32, shape=[1, 28, 28, 1])
+    y = tf.placeholder(tf.float32, shape=[1, 10])
+    cross_entropy = init_net5(x, y)
+    #graph = tf.get_default_graph()
+    #for op in graph.get_operations():
+     #   print(op.name)
+    train_modele(cross_entropy, X_train, Y_train, x, y)
 
 if __name__ == "__main__":
     main()
