@@ -6,12 +6,13 @@
 #    By: msukhare <marvin@42.fr>                    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2018/09/17 16:28:47 by msukhare          #+#    #+#              #
-#    Updated: 2018/09/30 19:19:17 by kemar            ###   ########.fr        #
+#    Updated: 2018/10/01 17:15:06 by msukhare         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
 import numpy as np
 import struct as st
+from math import floor
 import sys
 from matplotlib import pyplot as plt
 import tensorflow as tf
@@ -80,28 +81,39 @@ def init_net5(x, y):
     return (tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(\
             logits=out_dense, labels=y)))
 
-def train_modele(cross_entropy, X_train, Y_train, x, y):
+def spline(X, Y):
+
+
+def train_modele(cross_entropy, X_train, Y_train, x, y, X_cost, Y_cost, m):
     init = tf.global_variables_initializer()
     #learning_rate = tf.Variable(0.005, tf.float32)
-    training = tf.train.GradientDescentOptimizer(0.005).minimize(cross_entropy)
+    training = tf.train.GradientDescentOptimizer(0.0005).minimize(cross_entropy)
     nb_epoch = []
     cost = []
+    train = []
     with tf.Session() as sess:
         sess.run(init)
-        for i in range(500):
-            start = randint(0, 59968)
+        for i in range(5000):
+            start = randint(0, (floor(m * 0.8) - 32))
+            start2 = randint(0, (floor(m * 0.2) - 32))
             avg = 0
+            avg_cost = 0
             for j in range(32):
                 X = np.reshape(X_train[(start + j)], (1, 28, 28, 1))
+                X_c = np.reshape(X_cost[(start2 + j)], (1, 28, 28, 1))
                 Y = get_new_y(Y_train[(start + j)], 1, 10)
+                Y_c = get_new_y(Y_cost[(start2 + j)], 1, 10)
                 _, c = sess.run([training, cross_entropy],\
                         feed_dict={x: X, y: Y})
+                avg_cost += sess.run(cross_entropy, feed_dict={x: X_c, y: Y_c})
                 avg += c
+            cost.append((avg_cost / 32))
             nb_epoch.append(i)
-            cost.append((avg / 32))
-            #print("epoch = ", i, "cost = ", (avg / 32))
+            train.append((avg / 32))
+            print("epoch = ", i, "cost = ", (avg / 32))
         sess.close()
     plt.plot(nb_epoch, cost)
+    plt.plot(nb_epoch, train)
     plt.show()
 
 def main():
@@ -109,18 +121,20 @@ def main():
         print("need more file")
         sys.exit()
     X_train, Y_train, m, rows, cols = read_file_idx(sys.argv[1], sys.argv[2])
-    X_test, Y_test, m, rows, cols = read_file_idx(sys.argv[3], sys.argv[4])
+    X_test, Y_test, m_test, rows, cols = read_file_idx(sys.argv[3], sys.argv[4])
     #plt.imshow(X[45], interpolation='none', cmap='gray')
     #plt.show()
     X_train = X_train / 255
     X_test = X_test / 255
+    X_cost = X_train[floor(m * 0.8):]
+    Y_cost = Y_train[floor(m * 0.8):]
     x = tf.placeholder(tf.float32, shape=[1, 28, 28, 1])
     y = tf.placeholder(tf.float32, shape=[1, 10])
     cross_entropy = init_net5(x, y)
     #graph = tf.get_default_graph()
     #for op in graph.get_operations():
      #   print(op.name)
-    train_modele(cross_entropy, X_train, Y_train, x, y)
+    train_modele(cross_entropy, X_train, Y_train, x, y, X_cost, Y_cost, m)
 
 if __name__ == "__main__":
     main()
