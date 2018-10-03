@@ -6,7 +6,7 @@
 #    By: msukhare <marvin@42.fr>                    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2018/09/17 16:28:47 by msukhare          #+#    #+#              #
-#    Updated: 2018/10/02 16:40:10 by kemar            ###   ########.fr        #
+#    Updated: 2018/10/03 17:12:37 by msukhare         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -19,6 +19,7 @@ import tensorflow as tf
 from random import *
 from numpy.linalg import inv
 import scipy as sc
+
 def read_file_idx(images, labels):
     try:
         image_file = open(images, "rb")
@@ -61,7 +62,7 @@ def get_new_y(y, batch, nb_class):
         ret[i][y[i]] = 1
     return (ret)
 
-def define_conv_op(x, y):
+def define_conv_for_net5(x, y):
     layer1 = create_conv_layer(x, [5, 5, 1, 6], "VALID", [1, 1, 1, 1],\
             [1, 1, 6], "first_conv_layer")
     layer1 = tf.nn.pool(layer1, [2, 2], pooling_type="MAX",\
@@ -73,14 +74,14 @@ def define_conv_op(x, y):
     return (layer2)
 
 def init_net5(x, y):
-    out_conv = define_conv_op(x, y)
+    out_conv = define_conv_for_net5(x, y)
     flatten_layer = tf.reshape(out_conv, [-1, (out_conv.shape[1] *\
             out_conv.shape[2] * out_conv.shape[3])])
     out_dense = define_dense_layers(flatten_layer, 256, 120)
     out_dense = define_dense_layers(out_dense, 120, 84)
     out_dense = define_dense_layers(out_dense, 84, 10)
     return (tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(\
-            logits=out_dense, labels=y)))
+            logits=out_dense, labels=y)), tf.nn.softmax(out_dense))
 
 def spline(X, Y):
     h = np.zeros(((len(X) - 1), 1), dtype=float)
@@ -107,39 +108,55 @@ def spline(X, Y):
         cprime[i][0] = Y[i] - m[i][0] * ((h[i][0]**2) / 6)
     print(h, "\n\n", f, "\n\n", r, "\n\n", m, "\n\n", c, "\n\n", cprime)
 
-def train_modele(cross_entropy, X_train, Y_train, x, y, X_cost, Y_cost, m):
+def good_pred(pred, y):
+    if (pred[0][y] == np.amax(pred)):
+        return (1)
+    return (0)
+
+def train_modele(cross_entropy, out_put, X_train, Y_train, x, y, X_cost, Y_cost, X_test, Y_test, m):
     init = tf.global_variables_initializer()
     #learning_rate = tf.Variable(0.005, tf.float32)
-    training = tf.train.GradientDescentOptimizer(0.0005).minimize(cross_entropy)
+    training = tf.train.GradientDescentOptimizer(0.01).minimize(cross_entropy)
     epoch = 5000
+    batch = 32
     nb_epoch = np.zeros((epoch), dtype=float)
     cost = np.zeros((epoch), dtype=float)
     train = np.zeros((epoch), dtype=float)
     with tf.Session() as sess:
         sess.run(init)
         for i in range(epoch):
-            start = randint(0, (floor(m * 0.8) - 32))
-            start2 = randint(0, (floor(m * 0.2) - 32))
+            start = randint(0, (floor(m * 0.8) - batch))
+            start2 = randint(0, (floor(m * 0.2) - batch))
+            start3 = randint(0, 9968)
             avg = 0
             avg_cost = 0
-            for j in range(32):
+            accu = 0
+            for j in range(batch):
                 X = np.reshape(X_train[(start + j)], (1, 28, 28, 1))
                 X_c = np.reshape(X_cost[(start2 + j)], (1, 28, 28, 1))
                 Y = get_new_y(Y_train[(start + j)], 1, 10)
                 Y_c = get_new_y(Y_cost[(start2 + j)], 1, 10)
                 _, c = sess.run([training, cross_entropy],\
                         feed_dict={x: X, y: Y})
+                avg += c
                 c  = sess.run(cross_entropy, feed_dict={x: X_c, y: Y_c})
-                avg_cost += c / 32
-                avg += c / 32
-            cost[i] = avg_cost
+                avg_cost += c
+            cost[i] = avg_cost / batch
             nb_epoch[i] = i
-            train[i] = avg
-            print("epoch = ", i, "cost = ", avg)
+            train[i] = avg / batch
+            print("epoch= ", i, "cost_train= ", train[i], "cost_test= ", cost[i])
+        nb_right = 0
+        for i in range(10000):
+            X_t = np.reshape(X_test[i], (1, 28, 28, 1))
+            Y_t = get_new_y(Y_test[i], 1, 10)
+            nb_right += good_pred(sess.run(out_put, feed_dict={x: X_t, y: Y_t}), Y_test[i])
         sess.close()
+    print("accuracy = ", (nb_right / 10000))
     x_smooth = np.linspace(nb_epoch.min(), nb_epoch.max(), (epoch / 2))
     y_smooth = sc.interpolate.spline(nb_epoch, train, x_smooth)
+    y_smooth2 = sc.interpolate.spline(nb_epoch, cost, x_smooth)
     plt.plot(x_smooth, y_smooth)
+    plt.plot(x_smooth, y_smooth2)
     plt.show()
 
 def main():
@@ -158,11 +175,11 @@ def main():
     Y_cost = Y_train[floor(m * 0.8):]
     x = tf.placeholder(tf.float32, shape=[1, 28, 28, 1])
     y = tf.placeholder(tf.float32, shape=[1, 10])
-    cross_entropy = init_net5(x, y)
+    cross_entropy, out_put = init_net5(x, y)
     #graph = tf.get_default_graph()
     #for op in graph.get_operations():
      #   print(op.name)
-    train_modele(cross_entropy, X_train, Y_train, x, y, X_cost, Y_cost, m)
+    train_modele(cross_entropy, out_put, X_train, Y_train, x, y, X_cost, Y_cost, X_test, Y_test, m)
 
 if __name__ == "__main__":
     main()
