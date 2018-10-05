@@ -6,7 +6,7 @@
 #    By: msukhare <marvin@42.fr>                    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2018/09/17 16:28:47 by msukhare          #+#    #+#              #
-#    Updated: 2018/10/04 17:11:29 by msukhare         ###   ########.fr        #
+#    Updated: 2018/10/05 16:18:43 by msukhare         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -36,7 +36,7 @@ def read_file_idx(images, labels):
     Y = np.asarray(st.unpack('>'+'B'*nb_labels, label_file.read(nb_labels))).reshape(nb_labels, 1)
     byte_read = (rows * cols * nb_image * 1)
     X = np.asarray(st.unpack('>'+'B'*byte_read, image_file.read(byte_read)),\
-            dtype=np.float32).reshape((nb_image, 1, rows, cols, 1))
+            dtype=np.float32).reshape((nb_image, rows, cols, 1))
     return (X, Y, nb_image, rows, cols)
 
 def get_new_y(y, batch, nb_class):
@@ -46,12 +46,22 @@ def get_new_y(y, batch, nb_class):
     return (ret)
 
 def show_graph(nb_epoch, train, cost):
-    x_smooth = np.linspace(nb_epoch.min(), nb_epoch.max(), 300)
-    y_smooth = sc.interpolate.spline(nb_epoch, train, x_smooth)
-    y_smooth2 = sc.interpolate.spline(nb_epoch, cost, x_smooth)
-    plt.plot(x_smooth, y_smooth)
-    plt.plot(x_smooth, y_smooth2)
-    print("all ok")
+    #linear spline, maybe doesn't adapted to probleme
+    #x_smooth = np.linspace(nb_epoch.min(), nb_epoch.max(), 4)
+    #y_smooth = sc.interpolate.spline(nb_epoch, train, x_smooth)
+    #y_smooth2 = sc.interpolate.spline(nb_epoch, cost, x_smooth)
+    #plt.plot(x_smooth, y_smooth)
+    #plt.plot(x_smooth, y_smooth2)
+
+    #basic plot without smoothing
+   # plt.plot(nb_epoch, train)
+   # plt.plot(nb_epoch, cost)
+    poly = np.polyfit(nb_epoch, train, 3)
+    poly_y = np.poly1d(poly)(nb_epoch)
+    poly1 = np.polyfit(nb_epoch, cost, 3)
+    poly_y1 = np.poly1d(poly1)(nb_epoch)
+    plt.plot(nb_epoch, poly_y)
+    plt.plot(nb_epoch, poly_y1)
     plt.show()
 
 def get_class(pred):
@@ -65,39 +75,42 @@ def get_class(pred):
 
 def train_modele(cross_entropy, out_put, X_train, Y_train, x, y, X_cost, Y_cost, X_test, Y_test, m):
     init = tf.global_variables_initializer()
-    #learning_rate = tf.Variable(0.005, tf.float32)
-    training = tf.train.GradientDescentOptimizer(0.01).minimize(cross_entropy)
-    epoch = 300
+    learning_rate = tf.placeholder(tf.float32, shape=[])
+    training = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).minimize(cross_entropy)
+    epoch = 25000
     batch = 64
+    alpha = 0.01
     nb_epoch = np.zeros((epoch), dtype=float)
     cost = np.zeros((epoch), dtype=float)
     train = np.zeros((epoch), dtype=float)
     with tf.Session() as sess:
         sess.run(init)
+        seed(465)
         for i in range(epoch):
             start = randint(0, (floor(m * 0.8) - batch))
             start2 = randint(0, (floor(m * 0.2) - batch))
-            avg = 0
-            avg_cost = 0
-            accu = 0
-            for j in range(batch):
-                Y = get_new_y(Y_train[(start + j)], 1, 10)
-                Y_c = get_new_y(Y_cost[(start2 + j)], 1, 10)
-                _, c = sess.run([training, cross_entropy],\
-                        feed_dict={x: X_train[(start + j)], y: Y})
-                avg += c
-                c  = sess.run(cross_entropy, feed_dict={x: X_cost[(start2 + j)], y: Y_c})
-                avg_cost += c
-            cost[i] = avg_cost / batch
+            X = X_train[start: (start + batch)]
+            Y = get_new_y(Y_train[start: (start + batch)], batch, 10)
+            _, c_t = sess.run([training, cross_entropy], feed_dict={learning_rate: alpha, x: X, y: Y})
+            X_c = X_cost[start2: (start2 + batch)]
+            Y_c = get_new_y(Y_cost[start2: (start2 + batch)], batch, 10)
+            c = sess.run(cross_entropy, feed_dict={x: X_c, y: Y_c})
+            cost[i] = c / batch
             nb_epoch[i] = i
-            train[i] = avg / batch
+            train[i] = c_t / batch
             print("epoch= ", i, "cost_train= ", train[i], "cost_test= ", cost[i])
-            if (train[i] <= 0.09):
-                break
+            #if (train[i] < 0.000009):
+                #break
         good_pred = 0
         for i in range(10000):
+            X = np.reshape(X_test[i], (1, 28, 28, 1))
             Y_t = get_new_y(Y_test[i], 1, 10)
-            if (get_class(sess.run(out_put, feed_dict={x: X_test[i], y: Y_t})) == Y_test[i]):
+            classe = get_class(sess.run(out_put, feed_dict={x: X, y: Y_t}))
+            #if ((i % 500) == 0):
+                #plt.imshow(np.reshape(X_test[i], (28,28)), interpolation='none', cmap='gray')
+                #plt.title("predicted class {0}".format(classe))
+                #plt.show()
+            if (classe == Y_test[i]):
                 good_pred += 1
         sess.close()
     print("accuracy: ", good_pred / 10000)
@@ -109,19 +122,13 @@ def main():
         sys.exit()
     X_train, Y_train, m, rows, cols = read_file_idx(sys.argv[1], sys.argv[2])
     X_test, Y_test, m_test, rows, cols = read_file_idx(sys.argv[3], sys.argv[4])
-    #show handwritten number
-    #plt.imshow(X[45], interpolation='none', cmap='gray')
-    #plt.show()
     X_train = X_train / 255
     X_test = X_test / 255
     X_cost = X_train[floor(m * 0.8):]
     Y_cost = Y_train[floor(m * 0.8):]
-    x = tf.placeholder(tf.float32, shape=[1, 28, 28, 1])
-    y = tf.placeholder(tf.float32, shape=[1, 10])
+    x = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
+    y = tf.placeholder(tf.float32, shape=[None, 10])
     cross_entropy, out_put = init_net5(x, y)
-    #graph = tf.get_default_graph()  put graphe tensorflow
-    #for op in graph.get_operations():
-     #   print(op.name)
     train_modele(cross_entropy, out_put, X_train, Y_train, x, y, X_cost, Y_cost, X_test, Y_test, m)
 
 if __name__ == "__main__":
