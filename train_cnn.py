@@ -6,7 +6,7 @@
 #    By: msukhare <marvin@42.fr>                    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2018/09/17 16:28:47 by msukhare          #+#    #+#              #
-#    Updated: 2018/10/05 16:18:43 by msukhare         ###   ########.fr        #
+#    Updated: 2018/10/06 16:53:52 by msukhare         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -56,12 +56,14 @@ def show_graph(nb_epoch, train, cost):
     #basic plot without smoothing
    # plt.plot(nb_epoch, train)
    # plt.plot(nb_epoch, cost)
+    #polynome du 3eme degre
     poly = np.polyfit(nb_epoch, train, 3)
     poly_y = np.poly1d(poly)(nb_epoch)
     poly1 = np.polyfit(nb_epoch, cost, 3)
     poly_y1 = np.poly1d(poly1)(nb_epoch)
     plt.plot(nb_epoch, poly_y)
     plt.plot(nb_epoch, poly_y1)
+    #plt.plot(nb_epoch, train)
     plt.show()
 
 def get_class(pred):
@@ -77,12 +79,13 @@ def train_modele(cross_entropy, out_put, X_train, Y_train, x, y, X_cost, Y_cost,
     init = tf.global_variables_initializer()
     learning_rate = tf.placeholder(tf.float32, shape=[])
     training = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).minimize(cross_entropy)
-    epoch = 25000
-    batch = 64
-    alpha = 0.01
+    epoch = 8000
+    batch = 128
+    alpha = 0.1
     nb_epoch = np.zeros((epoch), dtype=float)
     cost = np.zeros((epoch), dtype=float)
     train = np.zeros((epoch), dtype=float)
+    saver = tf.train.Saver()
     with tf.Session() as sess:
         sess.run(init)
         seed(465)
@@ -99,8 +102,6 @@ def train_modele(cross_entropy, out_put, X_train, Y_train, x, y, X_cost, Y_cost,
             nb_epoch[i] = i
             train[i] = c_t / batch
             print("epoch= ", i, "cost_train= ", train[i], "cost_test= ", cost[i])
-            #if (train[i] < 0.000009):
-                #break
         good_pred = 0
         for i in range(10000):
             X = np.reshape(X_test[i], (1, 28, 28, 1))
@@ -112,9 +113,10 @@ def train_modele(cross_entropy, out_put, X_train, Y_train, x, y, X_cost, Y_cost,
                 #plt.show()
             if (classe == Y_test[i]):
                 good_pred += 1
+        print("accuracy: ", good_pred / 10000)
+        print("modele saves in ", saver.save(sess, "./tmp/model.ckpt"))
+        show_graph(nb_epoch, train, cost)
         sess.close()
-    print("accuracy: ", good_pred / 10000)
-    show_graph(nb_epoch, train, cost)
 
 def main():
     if (len(sys.argv) < 4):

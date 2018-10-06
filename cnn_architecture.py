@@ -6,7 +6,7 @@
 #    By: msukhare <marvin@42.fr>                    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2018/10/04 09:42:59 by msukhare          #+#    #+#              #
-#    Updated: 2018/10/04 17:11:31 by msukhare         ###   ########.fr        #
+#    Updated: 2018/10/06 17:02:34 by msukhare         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -32,11 +32,11 @@ def create_conv_layer(input, filter, p, s, bias, name, act_funct):
 
 def define_conv_for_net5(x):
     layer1 = create_conv_layer(x, [5, 5, 1, 6], "VALID", [1, 1, 1, 1],\
-            [1, 1, 6], "first_conv_layer", 0)
+            [1, 1, 6], "first_conv_layer", 1)
     layer1 = tf.nn.pool(layer1, [2, 2], pooling_type="MAX",\
             padding="VALID", strides=[2, 2])
     layer2 = create_conv_layer(layer1, [5, 5, 6, 16], "VALID", [1, 1, 1, 1],\
-            [1, 1, 16], "sec_conv_layer", 0)
+            [1, 1, 16], "sec_conv_layer", 1)
     layer2 = tf.nn.pool(layer2, [2, 2], pooling_type="MAX",\
             padding="VALID", strides=[2, 2])
     return (layer2)
@@ -49,4 +49,7 @@ def init_net5(x, y):
     out_dense = define_dense_layers(out_dense, 120, 84)
     out_dense = define_dense_layers(out_dense, 84, 10)
     return (tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(\
-            logits=out_dense, labels=y)), tf.nn.softmax(out_dense))
+            logits=out_dense, labels=y, name="cross")), tf.nn.softmax(out_dense, name="out"))
+
+def init_a_random_cnn(x, y):
+    
