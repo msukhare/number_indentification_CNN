@@ -6,7 +6,7 @@
 #    By: msukhare <marvin@42.fr>                    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2018/10/04 09:42:59 by msukhare          #+#    #+#              #
-#    Updated: 2018/10/06 17:02:34 by msukhare         ###   ########.fr        #
+#    Updated: 2018/10/07 10:09:34 by kemar            ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -51,5 +51,27 @@ def init_net5(x, y):
     return (tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(\
             logits=out_dense, labels=y, name="cross")), tf.nn.softmax(out_dense, name="out"))
 
+def define_conv_for_random_cnn(x):
+    layer1 = create_conv_layer(x, [5, 5, 1, 30], "VALID", [1, 1, 1, 1],\
+            [1, 1, 30], "first_conv_layer", 1)
+    layer1 = tf.nn.pool(layer1, [2, 2], pooling_type="MAX",\
+            padding="VALID", strides=[2,2])
+    layer2 = create_conv_layer(layer1, [3, 3, 30, 15], "VALID", [1, 1, 1, 1],\
+            [1, 1, 15], "sec_conv_layer", 1)
+    layer2 = tf.nn.pool(layer2, [2, 2], pooling_type="MAX",\
+            padding="VALID", strides=[2, 2])
+    return (layer2)
+
+import sys
+
 def init_a_random_cnn(x, y):
-    
+    out_conv = define_conv_for_random_cnn(x)
+    drop = tf.nn.dropout(out_conv, 0.2)
+    flatten_layer = tf.reshape(drop, [-1, (drop.shape[1] *\
+            drop.shape[2] * drop.shape[3])])
+    out_dense = define_dense_layers(flatten_layer, 375, 128)
+    out_dense = define_dense_layers(out_dense, 128, 50)
+    out_dense = define_dense_layers(out_dense, 50, 10)
+    return (tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(\
+            logits=out_dense, labels=y, name="cross")),\
+            tf.nn.softmax(out_dense, name="out"))
