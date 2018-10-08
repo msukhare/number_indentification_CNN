@@ -6,7 +6,7 @@
 #    By: msukhare <marvin@42.fr>                    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2018/10/04 09:42:59 by msukhare          #+#    #+#              #
-#    Updated: 2018/10/07 10:09:34 by kemar            ###   ########.fr        #
+#    Updated: 2018/10/08 17:15:34 by msukhare         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -61,8 +61,6 @@ def define_conv_for_random_cnn(x):
     layer2 = tf.nn.pool(layer2, [2, 2], pooling_type="MAX",\
             padding="VALID", strides=[2, 2])
     return (layer2)
-
-import sys
 
 def init_a_random_cnn(x, y):
     out_conv = define_conv_for_random_cnn(x)

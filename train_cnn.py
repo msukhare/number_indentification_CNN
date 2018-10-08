@@ -6,7 +6,7 @@
 #    By: msukhare <marvin@42.fr>                    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2018/09/17 16:28:47 by msukhare          #+#    #+#              #
-#    Updated: 2018/10/07 19:26:49 by kemar            ###   ########.fr        #
+#    Updated: 2018/10/08 17:15:35 by msukhare         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -58,14 +58,14 @@ def show_graph(nb_epoch, train, cost):
    # plt.plot(nb_epoch, train)
    # plt.plot(nb_epoch, cost)
     #polynome du 3eme degre
-    poly = np.polyfit(nb_epoch, train, 3)
-    poly_y = np.poly1d(poly)(nb_epoch)
-    poly1 = np.polyfit(nb_epoch, cost, 3)
-    poly_y1 = np.poly1d(poly1)(nb_epoch)
-    plt.plot(nb_epoch, poly_y)
-    plt.plot(nb_epoch, poly_y1)
-   # plt.plot(nb_epoch, train)
-   # plt.plot(nb_epoch, cost)
+#    poly = np.polyfit(nb_epoch, train, 3)
+#    poly_y = np.poly1d(poly)(nb_epoch)
+#    poly1 = np.polyfit(nb_epoch, cost, 3)
+#    poly_y1 = np.poly1d(poly1)(nb_epoch)
+#    plt.plot(nb_epoch, poly_y)
+#    plt.plot(nb_epoch, poly_y1)
+    plt.plot(nb_epoch, train)
+    plt.plot(nb_epoch, cost)
     plt.show()
 
 def get_class(pred):
@@ -152,11 +152,11 @@ def train_modele2(cross_entropy, out_put, X_train, Y_train, x, y, X_cost, Y_cost
                     Y_c = get_new_y(Y_cost[j: (j + batch)], batch, 10)
                     c = sess.run(cross_entropy, feed_dict={x: X_c, y: Y_c})
                     c_t = sess.run(cross_entropy, feed_dict={x: X, y: Y})
-                    avg_cost += c / batch
-                    avg += c_t / batch
-            cost[i] = avg_cost
+                    avg_cost += c
+                    avg += c_t
+            cost[i] = avg_cost / floor(m * 0.2)
             nb_epoch[i] = i
-            train[i] = avg
+            train[i] = avg / floor(m * 0.2)
             print("epoch= ", i, "cost_train= ", train[i], "cost_test= ", cost[i])
         good_pred = 0
         for i in range(10000):
