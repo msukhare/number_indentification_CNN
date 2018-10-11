@@ -6,7 +6,7 @@
 #    By: msukhare <marvin@42.fr>                    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2018/09/17 16:28:47 by msukhare          #+#    #+#              #
-#    Updated: 2018/10/08 17:15:35 by msukhare         ###   ########.fr        #
+#    Updated: 2018/10/11 17:08:04 by msukhare         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -70,6 +70,7 @@ def show_graph(nb_epoch, train, cost):
 
 def get_class(pred):
     maxi = pred[0][0]
+    print(pred)
     index = 0
     for i in range(10):
         if (pred[0][i] > maxi):
@@ -77,66 +78,19 @@ def get_class(pred):
             maxi = pred[0][i]
     return (index)
 
-def train_modele(cross_entropy, out_put, X_train, Y_train, x, y, X_cost, Y_cost, X_test, Y_test, m):
-    #init = tf.global_variables_initializer()
-    learning_rate = tf.placeholder(tf.float32, shape=[])
-   # training = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).minimize(cross_entropy)
-    training = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cross_entropy)
-    epoch = 5000
-    batch = 128
-    alpha = 0.01
-    nb_epoch = np.zeros((epoch), dtype=float)
-    cost = np.zeros((epoch), dtype=float)
-    train = np.zeros((epoch), dtype=float)
-    saver = tf.train.Saver()
-    init = tf.initialize_all_variables()
-    with tf.Session() as sess:
-        sess.run(init)
-        seed(465)
-        for i in range(epoch):
-            start = randint(0, (floor(m * 0.8) - batch))
-            start2 = randint(0, (floor(m * 0.2) - batch))
-            X = X_train[start: (start + batch)]
-            Y = get_new_y(Y_train[start: (start + batch)], batch, 10)
-            _, c_t = sess.run([training, cross_entropy], feed_dict={learning_rate: alpha, x: X, y: Y})
-            X_c = X_cost[start2: (start2 + batch)]
-            Y_c = get_new_y(Y_cost[start2: (start2 + batch)], batch, 10)
-            c = sess.run(cross_entropy, feed_dict={x: X_c, y: Y_c})
-            cost[i] = c / batch
-            nb_epoch[i] = i
-            train[i] = c_t / batch
-            if ((i % 500) == 0):
-                alpha *= 0.3
-            print("epoch= ", i, "cost_train= ", train[i], "cost_test= ", cost[i])
-        good_pred = 0
-        for i in range(10000):
-            X = np.reshape(X_test[i], (1, 28, 28, 1))
-            Y_t = get_new_y(Y_test[i], 1, 10)
-            classe = get_class(sess.run(out_put, feed_dict={x: X, y: Y_t}))
-            #if ((i % 500) == 0):
-                #plt.imshow(np.reshape(X_test[i], (28,28)), interpolation='none', cmap='gray')
-                #plt.title("predicted class {0}".format(classe))
-                #plt.show()
-            if (classe == Y_test[i]):
-                good_pred += 1
-        print("accuracy: ", good_pred / 10000)
-        print("modele saves in ", saver.save(sess, "./tmp/model.ckpt"))
-        show_graph(nb_epoch, train, cost)
-        sess.close()
-
 def train_modele2(cross_entropy, out_put, X_train, Y_train, x, y, X_cost, Y_cost, X_test, Y_test, m):
     init = tf.global_variables_initializer()
     learning_rate = tf.placeholder(tf.float32, shape=[])
     training = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).minimize(cross_entropy)
-   # training = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cross_entropy)
-    epoch = 100
+    #training = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cross_entropy)
+    epoch = 20
     batch = 128
     alpha = 0.1
     nb_epoch = np.zeros((epoch), dtype=float)
     cost = np.zeros((epoch), dtype=float)
     train = np.zeros((epoch), dtype=float)
-    saver = tf.train.Saver()
     #init = tf.initialize_all_variables()
+    saver = tf.train.Saver(max_to_keep=1)
     with tf.Session() as sess:
         sess.run(init)
         seed(465)
@@ -170,9 +124,8 @@ def train_modele2(cross_entropy, out_put, X_train, Y_train, x, y, X_cost, Y_cost
             if (classe == Y_test[i]):
                 good_pred += 1
         print("accuracy: ", good_pred / 10000)
-        print("modele saves in ", saver.save(sess, "./tmp/model.ckpt"))
+        print("modele has been save in ", saver.save(sess, './tmp/my_model.ckpt'))
         show_graph(nb_epoch, train, cost)
-        sess.close()
 
 def main():
     if (len(sys.argv) < 4):
@@ -184,9 +137,9 @@ def main():
     X_test = X_test / 255
     X_cost = X_train[floor(m * 0.8):]
     Y_cost = Y_train[floor(m * 0.8):]
-    x = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
-    y = tf.placeholder(tf.float32, shape=[None, 10])
-    #cross_entropy, out_put = init_a_random_cnn(x, y)
+    x = tf.placeholder(tf.float32, shape=[None, 28, 28, 1], name="x")
+    y = tf.placeholder(tf.float32, shape=[None, 10], name="y")
+   # cross_entropy, out_put = init_a_random_cnn(x, y)
     cross_entropy, out_put = init_net5(x, y)
     train_modele2(cross_entropy, out_put, X_train, Y_train, x, y, X_cost, Y_cost, X_test, Y_test, m)
 
