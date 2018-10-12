@@ -6,7 +6,7 @@
 #    By: msukhare <marvin@42.fr>                    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2018/10/12 10:56:26 by msukhare          #+#    #+#              #
-#    Updated: 2018/10/12 14:11:19 by msukhare         ###   ########.fr        #
+#    Updated: 2018/10/12 17:04:36 by msukhare         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -56,16 +56,22 @@ class digit_recognition:
         image = np.c_[cols, image, cols]
         return (cv2.resize(image, (28, 28), interpolation = cv2.INTER_AREA))
 
-    def add_padding(self, img, pad_l, pad_t, pad_r, pad_b):
-        height, width = img.shape
-        pad_left = np.zeros((height, pad_l), dtype = np.int)
-        img = np.concatenate((pad_left, img), axis = 1)
-        pad_up = np.zeros((pad_t, pad_l + width))
-        img = np.concatenate((pad_up, img), axis = 0)
-        pad_right = np.zeros((height + pad_t, pad_r))
-        img = np.concatenate((img, pad_right), axis = 1)
-        pad_bottom = np.zeros((pad_b, pad_l + width + pad_r))
-        img = np.concatenate((img, pad_bottom), axis = 0)
+    def add_padding(self, img, padd):
+        y, x = np.shape(img)
+        if (y > x):
+            cols = np.zeros((y, int((y - x) / 2)), dtype=np.uint8)
+            img = np.c_[cols, img, cols]
+        else:
+            rows = np.zeros((int((x - y) / 2), x), dtype=np.uint8)
+            img = np.r_[rows, img, rows]
+        y, x = np.shape(img)
+        cols = np.zeros((y, padd), dtype=np.uint8)
+        img = np.c_[cols, img, cols]
+        rows = np.zeros((padd, (x + 2* padd)), dtype=np.uint8)
+        img = np.r_[rows, img, rows]
+        plt.imshow(img, interpolation='none', cmap='gray')
+        plt.show()
+        print(np.shape(img))
         return (img)
 
     def center_number(self, image):
@@ -76,7 +82,7 @@ class digit_recognition:
         image = image[y1: y2, x1: x2]
         plt.imshow(image, interpolation='none', cmap='gray')
         plt.show()
-        return (self.add_padding(image, 40, 40, 40, 40))
+        return (self.add_padding(image, 50))
 
     def snap(self):
         x = self.draw_can.winfo_rootx()
