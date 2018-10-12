@@ -6,7 +6,7 @@
 #    By: msukhare <marvin@42.fr>                    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2018/10/12 10:56:26 by msukhare          #+#    #+#              #
-#    Updated: 2018/10/12 14:09:12 by msukhare         ###   ########.fr        #
+#    Updated: 2018/10/12 14:11:19 by msukhare         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -134,9 +134,9 @@ class digit_recognition:
         self.old_x, self.old_y = None, None
 
 def main():
-    digit_recognition = digit_recognition()
-    digit_recognition.window.mainloop()
-    digit_recognition.sess.close()
+    digit_reco = digit_recognition()
+    digit_reco.window.mainloop()
+    digit_reco.sess.close()
 
 if __name__ == "__main__":
     main()
