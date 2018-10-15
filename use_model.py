@@ -6,7 +6,7 @@
 #    By: msukhare <marvin@42.fr>                    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2018/10/12 10:56:26 by msukhare          #+#    #+#              #
-#    Updated: 2018/10/12 17:04:36 by msukhare         ###   ########.fr        #
+#    Updated: 2018/10/15 16:19:23 by msukhare         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -48,33 +48,45 @@ class digit_recognition:
         self.saver = tf.train.import_meta_graph('./tmp/my_model.ckpt.meta')
         self.saver.restore(self.sess, './tmp/my_model.ckpt')
 
-    def resize_image(self, image):
-        height, width = image.shape[0], image.shape[1]
-        rows = np.zeros((2, width), dtype=np.uint8)
-        image = np.r_[rows, image, rows]
-        cols = np.zeros(((height + 4), 2), dtype=np.uint8)
-        image = np.c_[cols, image, cols]
+    def center_image(self, image, padd, size_max, side_to_add, axis):
+        padd_modif = padd
+        size_to_add = size_max - side_to_add
+        if ((size_to_add % 2) != 0):
+            if ((int(size_to_add / 2) * 2 + side_to_add) > size_max):
+                padd_modif -= (int(size_to_add / 2) * 2 + side_to_add) - size_max
+            elif ((int(size_to_add / 2) * 2 + side_to_add) < size_max):
+                padd_modif += size_max - (int(size_to_add / 2) * 2 + side_to_add)
+        if (axis == 1):
+            cols_1 = np.zeros((size_max, (int(size_to_add / 2) + padd)), dtype=np.uint8)
+            cols_2 = np.zeros((size_max, (int(size_to_add / 2) + padd_modif)), dtype=np.uint8)
+            image = np.c_[cols_1, image, cols_2]
+            rows = np.zeros((padd, image.shape[1]), dtype=np.uint8)
+            return (np.r_[rows, image, rows])
+        rows_1 = np.zeros(((int(size_to_add / 2) + padd), size_max), dtype=np.uint8)
+        rows_2 = np.zeros(((int(size_to_add / 2) + padd_modif), size_max), dtype=np.uint8)
+        image = np.r_[rows_1, image, rows_2]
+        cols = np.zeros((image.shape[0], padd), dtype=np.uint8)
+        return (np.c_[cols, image, cols])
+
+    def resize_image(self, image, padd):
+        y, x = np.shape(image)
+        if (y > x):
+            image = self.center_image(image, padd, y, x, 1)
+        elif (x > y):
+            image = self.center_image(image, padd, x, y, 0)
+        else:
+            cols = np.zeros((y, padd), dtype=np.uint8)
+            image = np.c_[cols, image, cols]
+            rows = np.zeros((padd, (x + 2 * padd)), dtype=np.uint8)
+            image = np.r_[rows, image, rows]
+        print(np.shape(image))
+        plt.imshow(image, interpolation='none', cmap='gray')
+        plt.show()
         return (cv2.resize(image, (28, 28), interpolation = cv2.INTER_AREA))
 
-    def add_padding(self, img, padd):
-        y, x = np.shape(img)
-        if (y > x):
-            cols = np.zeros((y, int((y - x) / 2)), dtype=np.uint8)
-            img = np.c_[cols, img, cols]
-        else:
-            rows = np.zeros((int((x - y) / 2), x), dtype=np.uint8)
-            img = np.r_[rows, img, rows]
-        y, x = np.shape(img)
-        cols = np.zeros((y, padd), dtype=np.uint8)
-        img = np.c_[cols, img, cols]
-        rows = np.zeros((padd, (x + 2* padd)), dtype=np.uint8)
-        img = np.r_[rows, img, rows]
-        plt.imshow(img, interpolation='none', cmap='gray')
-        plt.show()
-        print(np.shape(img))
-        return (img)
-
-    def center_number(self, image):
+    def cut_number_in_image(self, image):
+        if (np.amax(image) == 0):
+            return (image)
         col_sum = np.where(np.sum(image, axis=0) > 0)
         row_sum = np.where(np.sum(image, axis=1) > 0)
         y1, y2 = row_sum[0][0], row_sum[0][-1]
@@ -82,7 +94,7 @@ class digit_recognition:
         image = image[y1: y2, x1: x2]
         plt.imshow(image, interpolation='none', cmap='gray')
         plt.show()
-        return (self.add_padding(image, 50))
+        return (image)
 
     def snap(self):
         x = self.draw_can.winfo_rootx()
@@ -93,7 +105,7 @@ class digit_recognition:
         image = image.astype(np.uint8)
         image[image == 0] = 255
         image[image == 1] = 0
-        return (self.resize_image(self.center_number(image)))
+        return (self.resize_image(self.cut_number_in_image(image), 100))
 
     def print_pred(self, out_put):
         class_pred = np.where(out_put == np.amax(out_put))
