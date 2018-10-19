@@ -6,7 +6,7 @@
 #    By: msukhare <marvin@42.fr>                    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2018/09/17 16:28:47 by msukhare          #+#    #+#              #
-#    Updated: 2018/10/11 17:08:04 by msukhare         ###   ########.fr        #
+#    Updated: 2018/10/19 16:52:26 by msukhare         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -70,7 +70,6 @@ def show_graph(nb_epoch, train, cost):
 
 def get_class(pred):
     maxi = pred[0][0]
-    print(pred)
     index = 0
     for i in range(10):
         if (pred[0][i] > maxi):
@@ -78,52 +77,83 @@ def get_class(pred):
             maxi = pred[0][i]
     return (index)
 
-def train_modele2(cross_entropy, out_put, X_train, Y_train, x, y, X_cost, Y_cost, X_test, Y_test, m):
-    init = tf.global_variables_initializer()
+def init_para_tensorflow(cross_entropy):
     learning_rate = tf.placeholder(tf.float32, shape=[])
-    training = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).minimize(cross_entropy)
-    #training = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cross_entropy)
-    epoch = 20
-    batch = 128
-    alpha = 0.1
+    #training = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).minimize(cross_entropy)
+    training = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cross_entropy)
+    init = tf.global_variables_initializer() #for GradientdescentOptimizer
+    saver = tf.train.Saver(max_to_keep=1)
+    return (learning_rate, init, training, saver)
+
+def get_accuracy(sess, out_put, X_test, Y_test, x, y):
+    good_pred = 0
+    for i in range(10000):
+        X = np.reshape(X_test[i], (1, 28, 28, 1))
+        Y = get_new_y(Y_test[i], 1, 10)
+        classe = get_class(sess.run(out_put, feed_dict={x: X, y: Y}))
+        #if ((i % 500) == 0):
+            #plt.imshow(np.reshape(X_test[i], (28,28)), interpolation='none', cmap='gray')
+            #plt.title("predicted class {0}".format(classe))
+            #plt.show()
+        if (classe == Y_test[i]):
+            good_pred += 1
+    print("accuracy: ", good_pred / 10000, "good_pred=", good_pred)
+
+def perform_one_epoch(sess, cross_entropy, training, X_train, Y_train, X_cost, Y_cost, x, y, m, learning_rate, alpha, batch):
+    avg = 0
+    avg_cost = 0
+    for j in range(0, floor(m * 0.8), batch):
+        X = X_train[j: (j + batch)]
+        Y = get_new_y(Y_train[j: (j + batch)], batch, 10)
+        sess.run(training, feed_dict={learning_rate: alpha, x: X, y: Y})
+        if (j < (floor(m * 0.2) - batch)):
+            X_c = X_cost[j: (j + batch)]
+            Y_c = get_new_y(Y_cost[j: (j + batch)], batch, 10)
+            c = sess.run(cross_entropy, feed_dict={x: X_c, y: Y_c})
+            c_t = sess.run(cross_entropy, feed_dict={x: X, y: Y})
+            avg_cost += c
+            avg += c_t
+    return ((avg_cost / floor(m * 0.2)), (avg / floor(m * 0.2)))
+
+def train_modele(cross_entropy, out_put, X_train, Y_train, x, y, X_cost, Y_cost, X_test, Y_test, m):
+    learning_rate, init, training, saver = init_para_tensorflow(cross_entropy)
+    #12 epoch, 128 batch 48k / 128 iter 0.1 alpha Gradient_descent Lenet5 ===> 98.31% accuracy
+    #33 epoch, 128 batch 48k / 128 iter 0.1 alpha Gradient_descent Lenet5 ===> 98.51% accuracy
+    #100 epoch, 128 batch 48k / 128 iter 0.1 alpha Gradient_descent Lenet5 ===> 98.77% accuracy
+    #300 epoch, 128 batch 48k / 128 iter 0.1 alpha Gradient_descent Lenet5 ===> 98.78% accuracy
+    #12 epoch, 128 batch 48k / 128 iter 0.01 alpha Gradient_descent Lenet5 ===> 55.79% accuracy
+    #100 epoch, 128 batch 48k / 128 iter 0.01 alpha Gradient_descent Lenet5 ===> 88.43% accuracy
+    #300 epoch, 128 batch 48k / 128 iter 0.01 alpha Gradient_descent Lenet5 ===> 88% accuracy
+    #300 epoch, 128 batch 48k / 128 iter 0.001 alpha Gradient_descent Lenet5 ===> 58.73% accuracy
+    #300 epoch, 128 batch 48k / 128 iter 0.1 alpha and decrease of 0.03 after each 12 epoch Gradient_descent Lenet5 ===> 98,67% accuracy
+    #12 epoch, 128 batch 48k / 128 iter 0.1 alpha Gradient_descent random ===> 94.16% accuracy
+    #100 epoch, 128 batch 48k / 128 iter 0.1 alpha Gradient_descent random ===> 96.7% accuracy
+    #300 epoch, 128 batch 48k / 128 iter 0.1 alpha Gradient_descent random ===> 97.02% accuracy
+    #12 epoch, 128 batch 48k / 128 iter 0.01 alpha Gradient_descent random ===> 36.13% accuracy
+    #100 epoch, 128 batch 48k / 128 iter 0.01 alpha Gradient_descent random ===> 94.21% accuracy
+    #300 epoch, 128 batch 48k / 128 iter 0.01 alpha Gradient_descent random ===> 96.49% accuracy
+    #300 epoch, 128 batch 48k / 128 iter 0.001 alpha Gradient_descent random ===> 80.80% accuracy
+   #300 epoch, 128 batch 48k / 128 iter 0.1 alpha and decrease of 0.03 after each 12 epoch Gradient_descent Lenet5 ===> 95,15% accuracy
+    #with adamoptimazer
+    #100 epoch, 128 batch 48k / 128 iter 0.1 alpha Gradient_descent random ===> 9.8% accuracy
+    #100 epoch, 128 batch 48k / 128 iter 0.01 alpha Gradient_descent random ===> 37.54% accuracy RETRY WITH SMOOTH
+    epoch = 100
+    batch  = 128
+    alpha = 0.01
     nb_epoch = np.zeros((epoch), dtype=float)
     cost = np.zeros((epoch), dtype=float)
     train = np.zeros((epoch), dtype=float)
-    #init = tf.initialize_all_variables()
-    saver = tf.train.Saver(max_to_keep=1)
     with tf.Session() as sess:
         sess.run(init)
         seed(465)
         for i in range(epoch):
-            avg = 0
-            avg_cost = 0
-            for j in range(0, floor(m * 0.8), batch):
-                X = X_train[j: (j + batch)]
-                Y = get_new_y(Y_train[j: (j + batch)], batch, 10)
-                sess.run(training, feed_dict={learning_rate: alpha, x: X, y: Y})
-                if (j < (floor(m * 0.2) - batch)):
-                    X_c = X_cost[j: (j + batch)]
-                    Y_c = get_new_y(Y_cost[j: (j + batch)], batch, 10)
-                    c = sess.run(cross_entropy, feed_dict={x: X_c, y: Y_c})
-                    c_t = sess.run(cross_entropy, feed_dict={x: X, y: Y})
-                    avg_cost += c
-                    avg += c_t
-            cost[i] = avg_cost / floor(m * 0.2)
+            cost[i], train[i] = perform_one_epoch(sess, cross_entropy, training, X_train, Y_train,\
+                    X_cost, Y_cost, x, y, m, learning_rate, alpha, batch)
             nb_epoch[i] = i
-            train[i] = avg / floor(m * 0.2)
+            #if (((i + 1) % 12) == 0):
+                #alpha *= 0.03
             print("epoch= ", i, "cost_train= ", train[i], "cost_test= ", cost[i])
-        good_pred = 0
-        for i in range(10000):
-            X = np.reshape(X_test[i], (1, 28, 28, 1))
-            Y_t = get_new_y(Y_test[i], 1, 10)
-            classe = get_class(sess.run(out_put, feed_dict={x: X, y: Y_t}))
-            #if ((i % 500) == 0):
-                #plt.imshow(np.reshape(X_test[i], (28,28)), interpolation='none', cmap='gray')
-                #plt.title("predicted class {0}".format(classe))
-                #plt.show()
-            if (classe == Y_test[i]):
-                good_pred += 1
-        print("accuracy: ", good_pred / 10000)
+        get_accuracy(sess, out_put, X_test, Y_test, x, y)
         print("modele has been save in ", saver.save(sess, './tmp/my_model.ckpt'))
         show_graph(nb_epoch, train, cost)
 
@@ -139,9 +169,9 @@ def main():
     Y_cost = Y_train[floor(m * 0.8):]
     x = tf.placeholder(tf.float32, shape=[None, 28, 28, 1], name="x")
     y = tf.placeholder(tf.float32, shape=[None, 10], name="y")
-   # cross_entropy, out_put = init_a_random_cnn(x, y)
-    cross_entropy, out_put = init_net5(x, y)
-    train_modele2(cross_entropy, out_put, X_train, Y_train, x, y, X_cost, Y_cost, X_test, Y_test, m)
+    cross_entropy, out_put = init_a_random_cnn(x, y)
+    #cross_entropy, out_put = init_net5(x, y)
+    train_modele(cross_entropy, out_put, X_train, Y_train, x, y, X_cost, Y_cost, X_test, Y_test, m)
 
 if __name__ == "__main__":
     main()
