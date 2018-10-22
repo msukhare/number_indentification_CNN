@@ -6,7 +6,7 @@
 #    By: msukhare <marvin@42.fr>                    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2018/09/17 16:28:47 by msukhare          #+#    #+#              #
-#    Updated: 2018/10/19 16:52:26 by msukhare         ###   ########.fr        #
+#    Updated: 2018/10/22 18:11:46 by msukhare         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -58,12 +58,12 @@ def show_graph(nb_epoch, train, cost):
    # plt.plot(nb_epoch, train)
    # plt.plot(nb_epoch, cost)
     #polynome du 3eme degre
-#    poly = np.polyfit(nb_epoch, train, 3)
-#    poly_y = np.poly1d(poly)(nb_epoch)
-#    poly1 = np.polyfit(nb_epoch, cost, 3)
-#    poly_y1 = np.poly1d(poly1)(nb_epoch)
-#    plt.plot(nb_epoch, poly_y)
-#    plt.plot(nb_epoch, poly_y1)
+    #poly = np.polyfit(nb_epoch, train, 3)
+    #poly_y = np.poly1d(poly)(nb_epoch)
+    #poly1 = np.polyfit(nb_epoch, cost, 3)
+    #poly_y1 = np.poly1d(poly1)(nb_epoch)
+    #plt.plot(nb_epoch, poly_y)
+    #plt.plot(nb_epoch, poly_y1)
     plt.plot(nb_epoch, train)
     plt.plot(nb_epoch, cost)
     plt.show()
@@ -81,7 +81,7 @@ def init_para_tensorflow(cross_entropy):
     learning_rate = tf.placeholder(tf.float32, shape=[])
     #training = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).minimize(cross_entropy)
     training = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cross_entropy)
-    init = tf.global_variables_initializer() #for GradientdescentOptimizer
+    init = tf.global_variables_initializer()
     saver = tf.train.Saver(max_to_keep=1)
     return (learning_rate, init, training, saver)
 
@@ -134,12 +134,13 @@ def train_modele(cross_entropy, out_put, X_train, Y_train, x, y, X_cost, Y_cost,
     #300 epoch, 128 batch 48k / 128 iter 0.01 alpha Gradient_descent random ===> 96.49% accuracy
     #300 epoch, 128 batch 48k / 128 iter 0.001 alpha Gradient_descent random ===> 80.80% accuracy
    #300 epoch, 128 batch 48k / 128 iter 0.1 alpha and decrease of 0.03 after each 12 epoch Gradient_descent Lenet5 ===> 95,15% accuracy
-    #with adamoptimazer
-    #100 epoch, 128 batch 48k / 128 iter 0.1 alpha Gradient_descent random ===> 9.8% accuracy
-    #100 epoch, 128 batch 48k / 128 iter 0.01 alpha Gradient_descent random ===> 37.54% accuracy RETRY WITH SMOOTH
-    epoch = 100
+    #with adamoptimizer
+    #100 epoch, 128 batch 48k / 128 iter 0.1 alpha ADAM random ===> 9.8% accuracy
+    #100 epoch, 128 batch 48k / 128 iter 0.01 alpha ADAM random ===> 76.11% accuracy
+    #300 epoch, 128 batch 48k / 128 iter 0.001 alpha ADAM random ===> 97.52% accuracy
+    epoch = 300
     batch  = 128
-    alpha = 0.01
+    alpha = 0.001
     nb_epoch = np.zeros((epoch), dtype=float)
     cost = np.zeros((epoch), dtype=float)
     train = np.zeros((epoch), dtype=float)
