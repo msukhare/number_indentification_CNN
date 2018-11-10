@@ -6,7 +6,7 @@
 #    By: msukhare <marvin@42.fr>                    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2018/09/17 16:28:47 by msukhare          #+#    #+#              #
-#    Updated: 2018/10/22 18:11:46 by msukhare         ###   ########.fr        #
+#    Updated: 2018/11/10 07:07:49 by msukhare         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -79,43 +79,49 @@ def get_class(pred):
 
 def init_para_tensorflow(cross_entropy):
     learning_rate = tf.placeholder(tf.float32, shape=[])
-    #training = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).minimize(cross_entropy)
-    training = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cross_entropy)
+    training = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).minimize(cross_entropy)
+    #training = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cross_entropy)
     init = tf.global_variables_initializer()
     saver = tf.train.Saver(max_to_keep=1)
     return (learning_rate, init, training, saver)
 
-def get_accuracy(sess, out_put, X_test, Y_test, x, y):
+def get_accuracy(sess, out_put, X_val, Y_val, x, y):
     good_pred = 0
     for i in range(10000):
-        X = np.reshape(X_test[i], (1, 28, 28, 1))
-        Y = get_new_y(Y_test[i], 1, 10)
+        X = np.reshape(X_val[i], (1, 28, 28, 1))
+        Y = get_new_y(Y_val[i], 1, 10)
         classe = get_class(sess.run(out_put, feed_dict={x: X, y: Y}))
         #if ((i % 500) == 0):
             #plt.imshow(np.reshape(X_test[i], (28,28)), interpolation='none', cmap='gray')
             #plt.title("predicted class {0}".format(classe))
             #plt.show()
-        if (classe == Y_test[i]):
+        if (classe == Y_val[i]):
             good_pred += 1
     print("accuracy: ", good_pred / 10000, "good_pred=", good_pred)
 
-def perform_one_epoch(sess, cross_entropy, training, X_train, Y_train, X_cost, Y_cost, x, y, m, learning_rate, alpha, batch):
+def perform_one_epoch(sess, cross_entropy, training, X_train, Y_train, x, y, learning_rate, alpha, m,\
+        batch):
     avg = 0
-    avg_cost = 0
-    for j in range(0, floor(m * 0.8), batch):
-        X = X_train[j: (j + batch)]
-        Y = get_new_y(Y_train[j: (j + batch)], batch, 10)
-        sess.run(training, feed_dict={learning_rate: alpha, x: X, y: Y})
-        if (j < (floor(m * 0.2) - batch)):
-            X_c = X_cost[j: (j + batch)]
-            Y_c = get_new_y(Y_cost[j: (j + batch)], batch, 10)
-            c = sess.run(cross_entropy, feed_dict={x: X_c, y: Y_c})
-            c_t = sess.run(cross_entropy, feed_dict={x: X, y: Y})
-            avg_cost += c
-            avg += c_t
-    return ((avg_cost / floor(m * 0.2)), (avg / floor(m * 0.2)))
+    j = 0
+    for i in range(0, m, batch):
+        X = X_train[i: (i + batch)]
+        Y = get_new_y(Y_train[i: (i + batch)], batch, 10)
+        _, tmp = sess.run([training, cross_entropy], feed_dict={learning_rate: alpha, x: X, y: Y})
+        avg += tmp
+        j += 1
+    return (avg / j)
 
-def train_modele(cross_entropy, out_put, X_train, Y_train, x, y, X_cost, Y_cost, X_test, Y_test, m):
+def perform_cost_fun(cross_entropy, sess, x, y, X_test, Y_test, m, batch):
+    avg = 0
+    j = 0
+    for i in range(0, (floor(m * 0.20) - batch), batch):
+        X = X_test[i: (i + batch)]
+        Y = get_new_y(Y_test[i: (i + batch)], batch, 10)
+        avg += sess.run(cross_entropy, feed_dict={x: X, y: Y})
+        j += 1
+    return (avg / j)
+
+def train_modele(cross_entropy, out_put, X_train, Y_train, x, y, X_test, Y_test, X_val, Y_val, m):
     learning_rate, init, training, saver = init_para_tensorflow(cross_entropy)
     #12 epoch, 128 batch 48k / 128 iter 0.1 alpha Gradient_descent Lenet5 ===> 98.31% accuracy
     #33 epoch, 128 batch 48k / 128 iter 0.1 alpha Gradient_descent Lenet5 ===> 98.51% accuracy
@@ -138,41 +144,42 @@ def train_modele(cross_entropy, out_put, X_train, Y_train, x, y, X_cost, Y_cost,
     #100 epoch, 128 batch 48k / 128 iter 0.1 alpha ADAM random ===> 9.8% accuracy
     #100 epoch, 128 batch 48k / 128 iter 0.01 alpha ADAM random ===> 76.11% accuracy
     #300 epoch, 128 batch 48k / 128 iter 0.001 alpha ADAM random ===> 97.52% accuracy
-    epoch = 300
-    batch  = 128
-    alpha = 0.001
+    epoch = 100
+    batch  = 32
+    alpha = 0.1
     nb_epoch = np.zeros((epoch), dtype=float)
-    cost = np.zeros((epoch), dtype=float)
+    test = np.zeros((epoch), dtype=float)
     train = np.zeros((epoch), dtype=float)
     with tf.Session() as sess:
         sess.run(init)
         seed(465)
         for i in range(epoch):
-            cost[i], train[i] = perform_one_epoch(sess, cross_entropy, training, X_train, Y_train,\
-                    X_cost, Y_cost, x, y, m, learning_rate, alpha, batch)
+            train[i] = perform_one_epoch(sess, cross_entropy, training, X_train, Y_train, x, y, \
+                    learning_rate, alpha, floor(m * 0.80), batch)
+            test[i] = perform_cost_fun(cross_entropy, sess, x, y, X_test, Y_test, m, batch)
             nb_epoch[i] = i
             #if (((i + 1) % 12) == 0):
                 #alpha *= 0.03
-            print("epoch= ", i, "cost_train= ", train[i], "cost_test= ", cost[i])
+            print("epoch= ", i, "cost_train= ", train[i], "cost_test= ", test[i])
         get_accuracy(sess, out_put, X_test, Y_test, x, y)
         print("modele has been save in ", saver.save(sess, './tmp/my_model.ckpt'))
-        show_graph(nb_epoch, train, cost)
+        show_graph(nb_epoch, train, test)
 
 def main():
     if (len(sys.argv) < 4):
         print("need more file")
         sys.exit()
     X_train, Y_train, m, rows, cols = read_file_idx(sys.argv[1], sys.argv[2])
-    X_test, Y_test, m_test, rows, cols = read_file_idx(sys.argv[3], sys.argv[4])
+    X_val, Y_val, m_test, rows, cols = read_file_idx(sys.argv[3], sys.argv[4])
     X_train = X_train / 255
-    X_test = X_test / 255
-    X_cost = X_train[floor(m * 0.8):]
-    Y_cost = Y_train[floor(m * 0.8):]
+    X_val = X_val / 255
+    X_test = X_train[floor(m * 0.8):]
+    Y_test = Y_train[floor(m * 0.8):]
     x = tf.placeholder(tf.float32, shape=[None, 28, 28, 1], name="x")
     y = tf.placeholder(tf.float32, shape=[None, 10], name="y")
-    cross_entropy, out_put = init_a_random_cnn(x, y)
-    #cross_entropy, out_put = init_net5(x, y)
-    train_modele(cross_entropy, out_put, X_train, Y_train, x, y, X_cost, Y_cost, X_test, Y_test, m)
+    #cross_entropy, out_put = init_a_random_cnn(x, y)
+    cross_entropy, out_put = init_net5(x, y)
+    train_modele(cross_entropy, out_put, X_train, Y_train, x, y, X_test, Y_test, X_val, Y_val, m)
 
 if __name__ == "__main__":
     main()
