@@ -6,7 +6,7 @@
 #    By: msukhare <marvin@42.fr>                    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2018/09/17 16:28:47 by msukhare          #+#    #+#              #
-#    Updated: 2018/11/10 07:07:49 by msukhare         ###   ########.fr        #
+#    Updated: 2018/11/11 16:50:48 by kemar            ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -17,7 +17,6 @@ import sys
 from matplotlib import pyplot as plt
 import tensorflow as tf
 from random import *
-import scipy as sc
 from cnn_architecture import init_net5
 from cnn_architecture import init_a_random_cnn
 
@@ -46,7 +45,7 @@ def get_new_y(y, batch, nb_class):
         ret[i][y[i]] = 1
     return (ret)
 
-def show_graph(nb_epoch, train, cost):
+def show_graph(nb_epoch, train, test):
     #linear spline, maybe doesn't adapted to probleme
     #x_smooth = np.linspace(nb_epoch.min(), nb_epoch.max(), 4)
     #y_smooth = sc.interpolate.spline(nb_epoch, train, x_smooth)
@@ -54,9 +53,6 @@ def show_graph(nb_epoch, train, cost):
     #plt.plot(x_smooth, y_smooth)
     #plt.plot(x_smooth, y_smooth2)
 
-    #basic plot without smoothing
-   # plt.plot(nb_epoch, train)
-   # plt.plot(nb_epoch, cost)
     #polynome du 3eme degre
     #poly = np.polyfit(nb_epoch, train, 3)
     #poly_y = np.poly1d(poly)(nb_epoch)
@@ -64,8 +60,10 @@ def show_graph(nb_epoch, train, cost):
     #poly_y1 = np.poly1d(poly1)(nb_epoch)
     #plt.plot(nb_epoch, poly_y)
     #plt.plot(nb_epoch, poly_y1)
-    plt.plot(nb_epoch, train)
-    plt.plot(nb_epoch, cost)
+
+    #basic plot without smoothing
+    plt.plot(nb_epoch, train, color='red')
+    plt.plot(nb_epoch, test, color='green')
     plt.show()
 
 def get_class(pred):
@@ -102,14 +100,23 @@ def get_accuracy(sess, out_put, X_val, Y_val, x, y):
 def perform_one_epoch(sess, cross_entropy, training, X_train, Y_train, x, y, learning_rate, alpha, m,\
         batch):
     avg = 0
-    j = 0
     for i in range(0, m, batch):
         X = X_train[i: (i + batch)]
         Y = get_new_y(Y_train[i: (i + batch)], batch, 10)
         _, tmp = sess.run([training, cross_entropy], feed_dict={learning_rate: alpha, x: X, y: Y})
         avg += tmp
-        j += 1
-    return (avg / j)
+    return (avg / (m / batch))
+
+def perform_one_epoch_rand(sess, cross_entropy, training, X_train, Y_train, x, y, learning_rate,\
+        alpha, m, batch):
+    avg = 0
+    for i in range((m / batch)):
+        ind = np.random.randint(0, (m - batch))
+        X = X[ind: (ind + batch)]
+        Y = get_new_y(Y_train[ind: (ind + batch)], batch, 10)
+        _, tmp = sess.run([training, cross_entropy], feed_dict={learning_rate: alpha, x: X, y: Y})
+        avg += tmp
+    return (avg / (m / batch))
 
 def perform_cost_fun(cross_entropy, sess, x, y, X_test, Y_test, m, batch):
     avg = 0
@@ -144,7 +151,7 @@ def train_modele(cross_entropy, out_put, X_train, Y_train, x, y, X_test, Y_test,
     #100 epoch, 128 batch 48k / 128 iter 0.1 alpha ADAM random ===> 9.8% accuracy
     #100 epoch, 128 batch 48k / 128 iter 0.01 alpha ADAM random ===> 76.11% accuracy
     #300 epoch, 128 batch 48k / 128 iter 0.001 alpha ADAM random ===> 97.52% accuracy
-    epoch = 100
+    epoch = 200
     batch  = 32
     alpha = 0.1
     nb_epoch = np.zeros((epoch), dtype=float)
@@ -156,13 +163,15 @@ def train_modele(cross_entropy, out_put, X_train, Y_train, x, y, X_test, Y_test,
         for i in range(epoch):
             train[i] = perform_one_epoch(sess, cross_entropy, training, X_train, Y_train, x, y, \
                     learning_rate, alpha, floor(m * 0.80), batch)
+           # train[i] = perform_one_epoch_rand(sess, cross_entropy, training, X_train, Y_train, x,\
+            #        y, learning_rate, alpha, floor(m * 0.80), batch)
             test[i] = perform_cost_fun(cross_entropy, sess, x, y, X_test, Y_test, m, batch)
             nb_epoch[i] = i
             #if (((i + 1) % 12) == 0):
                 #alpha *= 0.03
             print("epoch= ", i, "cost_train= ", train[i], "cost_test= ", test[i])
         get_accuracy(sess, out_put, X_test, Y_test, x, y)
-        print("modele has been save in ", saver.save(sess, './tmp/my_model.ckpt'))
+        print("model has been save in ", saver.save(sess, './tmp/my_model.ckpt'))
         show_graph(nb_epoch, train, test)
 
 def main():

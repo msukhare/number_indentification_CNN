@@ -6,7 +6,7 @@
 #    By: msukhare <marvin@42.fr>                    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2018/10/12 10:56:26 by msukhare          #+#    #+#              #
-#    Updated: 2018/10/19 16:53:24 by msukhare         ###   ########.fr        #
+#    Updated: 2018/11/11 16:48:43 by kemar            ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -79,9 +79,9 @@ class digit_recognition:
             image = np.c_[cols, image, cols]
             rows = np.zeros((padd, (x + 2 * padd)), dtype=np.uint8)
             image = np.r_[rows, image, rows]
-        print(np.shape(image))
-        plt.imshow(image, interpolation='none', cmap='gray')
-        plt.show()
+        #print(np.shape(image))
+        #plt.imshow(image, interpolation='none', cmap='gray')
+        #plt.show()
         return (cv2.resize(image, (28, 28), interpolation = cv2.INTER_AREA))
 
     def cut_number_in_image(self, image):
@@ -92,8 +92,8 @@ class digit_recognition:
         y1, y2 = row_sum[0][0], row_sum[0][-1]
         x1, x2 = col_sum[0][0], col_sum[0][-1]
         image = image[y1: y2, x1: x2]
-        plt.imshow(image, interpolation='none', cmap='gray')
-        plt.show()
+        #plt.imshow(image, interpolation='none', cmap='gray')
+        #plt.show()
         return (image)
 
     def snap(self):
@@ -116,8 +116,8 @@ class digit_recognition:
 
     def pred(self):
         img_array = self.snap()
-        plt.imshow(img_array, interpolation='none', cmap='gray')
-        plt.show()
+        #plt.imshow(img_array, interpolation='none', cmap='gray')
+        #plt.show()
         img_array = np.reshape(img_array, (1, 28, 28, 1))
         self.print_pred(self.sess.run('out:0', feed_dict={'x:0': img_array}))
 
