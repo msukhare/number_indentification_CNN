@@ -48,7 +48,7 @@
 
 * When you use predict button, the prediction is show down draw canvas like this:
 
-![prediction](exemple/prediction.png)
+![prediction](exemples/prediction.png)
 
 * After make a prediction you can clear or use predict button for an new prediction.
 
