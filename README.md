@@ -28,31 +28,31 @@
 
 * `use_cnn.py` creates a window with a canvas where you can draw number like in paint:
 
-![main_page](exemple/main_page)
+![main_page](exemples/main_page.png)
 
 * draw here:
 
-![draw_canvas](exemple/draw)
+![draw_canvas](exemples/draw.png)
 
-* To predict number use predict buttom:
+* To predict number use predict button:
 
-![buttom_predict](exemple/buttom_predict)
+![button_predict](exemples/predict_button.png)
 
-* To clear use clear buttom:
+* To clear use clear button:
 
-![buttom_clear](exemple/clear)
+![buttom_clear](exemples/clear.png)
 
-* To exit use exit buttom or kill script:
+* To exit use exit button or kill script:
 
-![exit_buttom](exemple/exit_buttom)
+![exit_buttom](exemples/exit_button.png)
 
-* When you use predict buttom, the prediction is show down draw canvas like this:
+* When you use predict button, the prediction is show down draw canvas like this:
 
-!prediction](exemple/prediction)
+![prediction](exemple/prediction.png)
 
-* After make a prediction you can clear or use predict buttom for an new prediction.
+* After make a prediction you can clear or use predict button for an new prediction.
 
-* This script uses [tkinter](https://en.wikipedia.org/wiki/Tkinter) to generate a window, canvas and buttom.
+* This script uses [tkinter](https://en.wikipedia.org/wiki/Tkinter) to generate a window, canvas and button.
 
 * This scipt uses tensorflow to restore model in tmp.
 
