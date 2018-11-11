@@ -12,7 +12,7 @@
 
 * `train_cnn.py` uses [tensorflow](https://www.tensorflow.org/) to create an CNN, train CNN and save the model in tmp.
 
-* `train_cnn.py` calls init_net5 in cnn_architecture to create [LeNet5](http://yann.lecun.com/exdb/lenet/).
+* `train_cnn.py` calls init_net5 in `cnn_architecture.py` to create [LeNet5](http://yann.lecun.com/exdb/lenet/).
 
 * `train_cnn.py` uses gradientDescenteOptimizer with mini batch to train weights.
 
@@ -22,7 +22,7 @@
 
 * You can also use AdamOptimizer if you remove comment on line 82, and put a comment on line 81.
 
-* Another architecture is available in `train_cnn.py`, it's a random CNN find on a blog. You can remove comment on line 190, and put a comment on line 191.
+* Another architecture is available in `train_cnn.py`, it's a random CNN find on a blog. You can remove comment on line 190, and put a comment on line 191 to get this arhcitecture.
 
 ### About `use_cnn.py`:
 
@@ -46,7 +46,7 @@
 
 ![exit_buttom](exemples/exit_button.png)
 
-* When you use predict button, the prediction is show down draw canvas like this:
+* When you use predict button, the prediction is shown, on the bottom, in draw canvas like this:
 
 ![prediction](exemples/prediction.png)
 
@@ -54,9 +54,9 @@
 
 * This script uses [tkinter](https://en.wikipedia.org/wiki/Tkinter) to generate a window, canvas and button.
 
-* This scipt uses tensorflow to restore model in tmp.
+* This script uses tensorflow to restore model in tmp and uses to do new predictions.
 
-* It's use to [openCV](https://opencv.org/) to resize image in (28, 28).
+* It's use [openCV](https://opencv.org/) to resize image in (28, 28).
 
 * _**If you are on linux distribution remove comment line 20, and comment line 19, because pysceenshot doesn't work on macOS.**_
 
