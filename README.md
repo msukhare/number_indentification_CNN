@@ -8,7 +8,7 @@
 
 * number_identification_CNN is composed of two scripts, `train_cnn.py` and `use_model.py`.
 
-## About `train_cnn.py`:
+### About `train_cnn.py`:
 
 * `train_cnn.py` uses [tensorflow](https://www.tensorflow.org/) to create an CNN, train CNN and save the model in tmp.
 
@@ -24,7 +24,7 @@
 
 * Another architecture is available in `train_cnn.py`, it's a random CNN find on a blog. You can remove comment on line 190, and put a comment on line 191.
 
-## About `use_cnn.py`:
+### About `use_cnn.py`:
 
 * `use_cnn.py` creates a window with a canvas where you can draw number like in paint:
 
@@ -54,11 +54,35 @@
 
 * This script uses [tkinter](https://en.wikipedia.org/wiki/Tkinter) to generate a window, canvas and buttom.
 
-* This scipt uses tensorflow to restaur model in tmp.
+* This scipt uses tensorflow to restore model in tmp.
 
 * It's use to [openCV](https://opencv.org/) to resize image in (28, 28).
 
 * _**If you are on linux distribution remove comment line 20, and comment line 19, because pysceenshot doesn't work on macOS.**_
 
 ### About data train and test:
+
+* trainset and testset are in idx format.
+
+* Data comes from [the MNIST database of handwritten digits](http://yann.lecun.com/exdb/mnist/index.html).
+
+* trainset contains 60k exemples, and the testset contains 10k exemples.
+
+* `train-images-idx3-ubyte` is the images and `train-labels-idx1-ubyte` is classes of image. It's the same for testset.
+
+## What do you need to make number_indentification_CNN work
+
+* python >= 3.0 
+
+* [numpy](http://www.numpy.org/)
+
+* [openCV](https://opencv.org/)
+
+* [tensorflow](https://www.tensorflow.org/)
+
+* [tkinter](https://en.wikipedia.org/wiki/Tkinter)
+
+* [matplotlib](https://matplotlib.org/)
+
+## Usage:
 
