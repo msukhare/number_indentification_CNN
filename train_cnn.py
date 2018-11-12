@@ -6,7 +6,7 @@
 #    By: msukhare <marvin@42.fr>                    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2018/09/17 16:28:47 by msukhare          #+#    #+#              #
-#    Updated: 2018/11/11 16:50:48 by kemar            ###   ########.fr        #
+#    Updated: 2018/11/12 17:01:23 by msukhare         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -110,9 +110,9 @@ def perform_one_epoch(sess, cross_entropy, training, X_train, Y_train, x, y, lea
 def perform_one_epoch_rand(sess, cross_entropy, training, X_train, Y_train, x, y, learning_rate,\
         alpha, m, batch):
     avg = 0
-    for i in range((m / batch)):
+    for i in range(int(m / batch)):
         ind = np.random.randint(0, (m - batch))
-        X = X[ind: (ind + batch)]
+        X = X_train[ind: (ind + batch)]
         Y = get_new_y(Y_train[ind: (ind + batch)], batch, 10)
         _, tmp = sess.run([training, cross_entropy], feed_dict={learning_rate: alpha, x: X, y: Y})
         avg += tmp
@@ -151,20 +151,20 @@ def train_modele(cross_entropy, out_put, X_train, Y_train, x, y, X_test, Y_test,
     #100 epoch, 128 batch 48k / 128 iter 0.1 alpha ADAM random ===> 9.8% accuracy
     #100 epoch, 128 batch 48k / 128 iter 0.01 alpha ADAM random ===> 76.11% accuracy
     #300 epoch, 128 batch 48k / 128 iter 0.001 alpha ADAM random ===> 97.52% accuracy
-    epoch = 200
+    epoch = 50
     batch  = 32
     alpha = 0.1
     nb_epoch = np.zeros((epoch), dtype=float)
     test = np.zeros((epoch), dtype=float)
     train = np.zeros((epoch), dtype=float)
+    np.random.seed(42) #8
     with tf.Session() as sess:
         sess.run(init)
-        seed(465)
         for i in range(epoch):
-            train[i] = perform_one_epoch(sess, cross_entropy, training, X_train, Y_train, x, y, \
-                    learning_rate, alpha, floor(m * 0.80), batch)
-           # train[i] = perform_one_epoch_rand(sess, cross_entropy, training, X_train, Y_train, x,\
-            #        y, learning_rate, alpha, floor(m * 0.80), batch)
+            #train[i] = perform_one_epoch(sess, cross_entropy, training, X_train, Y_train, x, y, \
+                    #learning_rate, alpha, floor(m * 0.80), batch)
+            train[i] = perform_one_epoch_rand(sess, cross_entropy, training, X_train, Y_train, x,\
+                    y, learning_rate, alpha, floor(m * 0.80), batch)
             test[i] = perform_cost_fun(cross_entropy, sess, x, y, X_test, Y_test, m, batch)
             nb_epoch[i] = i
             #if (((i + 1) % 12) == 0):
