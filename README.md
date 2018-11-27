@@ -4,7 +4,7 @@
 
 * It's a machine learning project.
 
-* This project uses [tensorflow](https://www.tensorflow.org/) to do an [convolutional neural network](https://en.wikipedia.org/wiki/Convolutional_neural_network).
+* This project uses [tensorflow](https://www.tensorflow.org/) to do a [convolutional neural network](https://en.wikipedia.org/wiki/Convolutional_neural_network).
 
 * number_identification_CNN is composed of two scripts, `train_cnn.py` and `use_model.py`.
 
